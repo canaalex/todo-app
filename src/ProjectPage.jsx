@@ -1,7 +1,6 @@
 import React,{useEffect, useState} from 'react';
-import styles from "./index.css"
 import { AiOutlinePlus } from 'react-icons/ai';
-import { query, collection, onSnapshot, QuerySnapshot,updateDoc,doc } from 'firebase/firestore';
+import { query, collection, onSnapshot,addDoc} from 'firebase/firestore';
 import {db} from './firebase';
 import { useNavigate } from 'react-router-dom';
 
@@ -44,12 +43,30 @@ export default function ProjectPage() {
 const showTodo=(id)=>{
   navigate(`/todo/${id}`);
 }
+const handleCreateProject = async (e) => {
+  e.preventDefault();
+  try {
+    const createdAt = new Date();
+    // Add a new document to the "projects" collection with the new project title
+    const docRef = await addDoc(collection(db, 'projects'), {
+      title: project,
+      createdDate:createdAt
+    });
+    
+    console.log('New project added with ID: ', docRef.id);
+
+    // Redirect to the newly created project page or any other page
+    navigate(`/todo/${docRef.id}`);
+  } catch (error) {
+    console.error('Error creating project: ', error);
+  }
+};
   return (
     <div className={style.bg}>
     <div className={style.container}>
       <h3 className={style.heading}>Project</h3>
       {project}
-      <form  className={style.form}>
+      <form onSubmit={handleCreateProject} className={style.form}>
         <input
           value={project}
           onChange={(e) => setProject(e.target.value)}

@@ -10,18 +10,18 @@ const style = {
   button: `cursor-pointer flex items-center`,
 };
 
-const Todo = ({ todo,toggleComplete }) => {
-    console.log('checkk',todo)
+const Todo = ({ todo,toggleComplete,index,deleteTodo }) => {
+    console.log('todo',todo)
   return (
    
     <li className={todo.status ? style.liComplete : style.li}>
       <div className={style.row}>
-        <input onChange={()=>toggleComplete(todo)} type='checkbox' checked={todo.status ? 'checked' : ''} />
-        <p onClick={()=>toggleComplete(todo)} className={todo.status ? style.textComplete : style.text}>
+        <input onChange={()=>toggleComplete(index)} type='checkbox' checked={todo.status ? 'checked' : ''} />
+        <p onClick={()=>toggleComplete(index)} className={todo.status ? style.textComplete : style.text}>
           {todo.description}
         </p>
       </div>
-      <button>{<FaRegTrashAlt />}</button>
+      <button onClick={()=>deleteTodo(index)}>{<FaRegTrashAlt />}</button>
     </li>
   );
 };

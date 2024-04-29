@@ -20,40 +20,109 @@ function App() {
     row: `flex`,
   };
   const [project, setProject] = useState([]);
+  const [input,setInput]=useState('');
   const { id } = useParams();
-  console.log('id',id);
 
-  const toggleComplete = async (project, todoIndex) => {
-    if (todoIndex >= 0 && todoIndex < project.todos.length) {
-      // Toggle the completed status of the todo item
-      const updatedTodos = [...project.todos];
-      updatedTodos[todoIndex].completed = !updatedTodos[todoIndex].completed;
+
+  const createTodo = async (e) => {
+    e.preventDefault();
+  
+    if (input === '') {
+      alert('Please enter a valid todo');
+      return;
+    }
+     console.log('inside',id)
+    try {
+      // Add a new todo to the 'todos' array in the specified project document
+      const projectRef = doc(db, 'projects', id);
+      const projectSnapshot = await getDoc(projectRef);
+      const createdAt = new Date();
       
+      if (projectSnapshot.exists()) {
+        const projectData = projectSnapshot.data();
+        if(!projectData.todos){
+          const updatedTodos = [{ description: input, status: false,createdDate:createdAt,updatedDate:createdAt}];
+            
+        await updateDoc(projectRef, { todos: updatedTodos });
+        setProject({ ...projectData, todos: updatedTodos });
+        }
+        else {  const updatedTodos = [...projectData.todos, { description: input, status: false,createdDate:createdAt,updatedDate:createdAt}];
+        
+        await updateDoc(projectRef, { todos: updatedTodos });
+        setProject({ ...projectData, todos: updatedTodos });}
+      
+      
+      } else {
+        console.error('Project does not exist');
+      }
+  
+      // Clear the input field after creating the todo
+      setInput('');
+    } catch (error) {
+      console.error('Error creating todo:', error);
+      // Handle error (e.g., show error message to the user)
+    }
+  };
+  
+
+  const toggleComplete = async (todoIndex) => {
+    if (!project || typeof project !== 'object' || !Array.isArray(project.todos)) {
+      console.error('Project state is empty, not an object, or todos is not an array.');
+      return;
+    }
+  
+    if (todoIndex < 0 || todoIndex >= project.todos.length) {
+      console.error(`Invalid todo index: ${todoIndex}`);
+      return;
+    }
+  
+    // Toggle the completion status of the todo item
+    const updatedTodos = [...project.todos]; // Make a shallow copy of todos array
+    updatedTodos[todoIndex] = {
+      ...updatedTodos[todoIndex],
+      status: !updatedTodos[todoIndex].status
+    };
+  
+    try {
       // Update the project document in Firestore with the updated todos array
       await updateDoc(doc(db, 'projects', project.id), {
         todos: updatedTodos
       });
-    } else {
-      console.error(`Invalid todo index: ${todoIndex}`);
+  
+      // Update the project state with the updated todos array
+      setProject({ ...project, todos: updatedTodos });
+      console.log('update');
+    } catch (error) {
+      console.error('Error updating project:', error);
+    }
+  };
+  const deleteTodo = async (todoIndex) => {
+    try {
+      if (!Array.isArray(project.todos)) {
+        console.error('Todos array is not defined or not an array.');
+        return;
+      }
+  
+      if (todoIndex < 0 || todoIndex >= project.todos.length) {
+        console.error(`Invalid todo index: ${todoIndex}`);
+        return;
+      }
+  
+      // Make a shallow copy of the todos array and remove the todo at the specified index
+      const updatedTodos = [...project.todos.slice(0, todoIndex), ...project.todos.slice(todoIndex + 1)];
+
+      // Update the project document in Firestore with the modified todos array
+      await updateDoc(doc(db, 'projects', id), {
+        todos: updatedTodos
+      });
+     console.log('delete',updatedTodos);
+      // Update the local state with the modified todos array
+      setProject({ ...project, todos: updatedTodos });
+    } catch (error) {
+      console.error('Error deleting todo:', error);
     }
   };
 
-//   useEffect(() => {
-//     const q = query(collection(db, 'projects'));
-
-//     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-//         let todosArr = [];
-//         querySnapshot.forEach((doc) => {
-//             todosArr.push({ ...doc.data(), id: doc.id });
-//         });
-//         setTodos(todosArr);
-//         console.log('Todos fetched:', todosArr);
-//     }, (error) => {
-//         console.error('Error fetching todos:', error);
-//     });
-
-//     return () => unsubscribe();
-// }, []);
 useEffect(() => {
   const fetchProject = async () => {
     try {
@@ -73,21 +142,16 @@ useEffect(() => {
   fetchProject();
 }, [id]);
 
-// if(!todos){
-//   const todosList = todos[1].todos;
-//   console.log('checkkk',todosList);
-// }
-
 
   return (
     <div className={style.bg}>
     <div className={style.container}>
       <h3 className={style.heading}>Todo App</h3>
   
-      <form  className={style.form}>
+      <form onSubmit={createTodo} className={style.form}>
         <input
-          // value={input}
-          // onChange={(e) => setInput(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
           className={style.input}
           type='text'
           placeholder='Add Todo'
@@ -103,7 +167,9 @@ useEffect(() => {
         <Todo
           key={index}
           todo={todo}
+          index={index}
           toggleComplete={toggleComplete}
+          deleteTodo={deleteTodo}
         />
       ))
     ) : (
@@ -113,7 +179,8 @@ useEffect(() => {
         </div>
         </li>
     )}
-  </div>
+      </div>
+      {project.todos && project.todos.length ?(<p className={style.count}>{`You have ${project.todos.length} todos`}</p>):''}
       </div>
       </div>
   );

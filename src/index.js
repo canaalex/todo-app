@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import ProjectPage from './ProjectPage';
+import ProjectPage from './projectPage';
 import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
